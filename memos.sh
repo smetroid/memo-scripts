@@ -58,12 +58,12 @@ COMMAND=$(echo "$1" | jq -r '.command')
 FILTER=$(echo "$1" | jq -r '.command | split("-")[1]' )
 if [ "$COMMAND" = "memo-cmds" ]; then
   echo $(date) >> $OUTPUT
-  MEMOS=$(~/projects/goscripts/memo/get-memos -tags "${FILTER}")
+  MEMOS=$(~/projects/memo-scripts/get-memos -tags "${FILTER}")
   echo "Debug: MEMOS output:" >> $OUTPUT
   echo "$FILTER" >> $OUTPUT
   echo "$MEMOS" >> $OUTPUT
   # it seems to fail because get-memos is not fast enough
-  #~/projects/goscripts/get-memos | tee ./debug_output.json | jq '{
+  #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
   echo "$MEMOS" | jq '{
         "items": map({
             "title": .cmd,
@@ -96,9 +96,9 @@ if [ "$COMMAND" = "memo-cmds" ]; then
 fi
 
 if [ "$COMMAND" = "memo-snippets" ]; then
-  MEMOS=$(~/projects/goscripts/memo/get-memos -tags "${FILTER}")
+  MEMOS=$(~/projects/memo-scripts/get-memos -tags "${FILTER}")
   # it seems to fail because get-memos is not fast enough
-  #~/projects/goscripts/get-memos | tee ./debug_output.json | jq '{
+  #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
   echo "$MEMOS" | jq '{
         "items": map({
             "title": .content,
@@ -125,9 +125,9 @@ fi
 
 
 if [ "$COMMAND" = "memo-all" ]; then
-  MEMOS=$(~/projects/goscripts/memo/get-memos)
+  MEMOS=$(~/projects/memo-scripts/get-memos)
   # it seems to fail because get-memos is not fast enough
-  #~/projects/goscripts/get-memos | tee ./debug_output.json | jq '{
+  #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
   echo "$MEMOS" | jq '{
         "items": map({
             "title": .content,
