@@ -48,6 +48,12 @@ if [ $# -eq 0 ]; then
                 title: "view command",
                 mode: "detail",
                 exit: "false"
+            },
+            {
+                name: "edit-memo",
+                title: "edit memo",
+                mode: "tty",
+                exit: "false"
             }
         ]
     }'
@@ -55,16 +61,16 @@ if [ $# -eq 0 ]; then
 fi
 
 COMMAND=$(echo "$1" | jq -r '.command')
-FILTER=$(echo "$1" | jq -r '.command | split("-")[1]' )
+FILTER=$(echo "$1" | jq -r '.command | split("-")[1]')
 if [ "$COMMAND" = "memo-cmds" ]; then
-  echo $(date) >> $OUTPUT
-  MEMOS=$(~/projects/memo-scripts/get-memos -tags "${FILTER}")
-  echo "Debug: MEMOS output:" >> $OUTPUT
-  echo "$FILTER" >> $OUTPUT
-  echo "$MEMOS" >> $OUTPUT
-  # it seems to fail because get-memos is not fast enough
-  #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
-  echo "$MEMOS" | jq '{
+    echo $(date) >>$OUTPUT
+    MEMOS=$(~/projects/memo-scripts/get-memos -tags "${FILTER}")
+    echo "Debug: MEMOS output:" >>$OUTPUT
+    echo "$FILTER" >>$OUTPUT
+    echo "$MEMOS" >>$OUTPUT
+    # it seems to fail because get-memos is not fast enough
+    #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
+    echo "$MEMOS" | jq '{
         "items": map({
             "title": .cmd,
             #"subtitle": .tags,
@@ -92,14 +98,14 @@ if [ "$COMMAND" = "memo-cmds" ]; then
           "exit": "true"
       }]
   }'
-  exit 0
+    exit 0
 fi
 
 if [ "$COMMAND" = "memo-snippets" ]; then
-  MEMOS=$(~/projects/memo-scripts/get-memos -tags "${FILTER}")
-  # it seems to fail because get-memos is not fast enough
-  #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
-  echo "$MEMOS" | jq '{
+    MEMOS=$(~/projects/memo-scripts/get-memos -tags "${FILTER}")
+    # it seems to fail because get-memos is not fast enough
+    #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
+    echo "$MEMOS" | jq '{
         "items": map({
             "title": .content,
             #"subtitle": .tags,
@@ -120,27 +126,37 @@ if [ "$COMMAND" = "memo-snippets" ]; then
           "exit": "true"
       }]
   }'
-  exit 0
+    exit 0
 fi
 
-
 if [ "$COMMAND" = "memo-all" ]; then
-  MEMOS=$(~/projects/memo-scripts/get-memos)
-  # it seems to fail because get-memos is not fast enough
-  #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
-  echo "$MEMOS" | jq '{
+    MEMOS=$(~/projects/memo-scripts/get-memos)
+    # it seems to fail because get-memos is not fast enough
+    #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
+    echo "$MEMOS" | jq '{
         "items": map({
             "title": .content,
             "subtitle": .cmd,
             "accessories": [.tags],
             "actions": [{
                 "type": "run",
-                "title": "view cmd ",
+                "title": "view memo",
                 "command": "view-command",
+                    "params": {
+                        "content": .content,
+                        "codeblock": .cmd,
+                        "id": .id
+                    },
+                },
+                {
+                "type": "run",
+                "title": "edit memo",
+                "command": "edit-memo",
                 "params": {
                     "content": .content,
                     "codeblock": .cmd,
-                },
+                    "id": .id
+                }
             }]
         }),
         "actions": [{
@@ -148,24 +164,47 @@ if [ "$COMMAND" = "memo-all" ]; then
           "type": "reload",
           "exit": "true"
       }]
-  }'
+  }' 2> >(tee /dev/stderr) || { 
+       echo "Error: jq failed to process JSON" >&2
+       exit 2
+    }
   exit 0
 fi
 
-
 if [ "$COMMAND" = "run-command" ]; then
-  CMD=$(echo "$1"| jq -r '.params.codeblock')
-  konsole -e bash -c "$CMD; exec bash"
+    CMD=$(echo "$1" | jq -r '.params.codeblock')
+    konsole -e bash -c "$CMD; exec bash"
 elif [ "$COMMAND" = "view-command" ]; then
-    content=$(echo "$1"| jq -r '.params.content')
-    codeblock=$(echo "$1"| jq -r '.params.codeblock')
-    jq -n --arg content "$content" --arg codeblock "$codeblock" '{
+    id=$(echo "$1" | jq -r '.params.id')
+    content=$(echo "$1" | jq -r '.params.content')
+    echo "$1" | jq -r '.params.content' > /tmp/$id.md
+    file="/tmp/$id.md"
+    codeblock=$(echo "$1" | jq -r '.params.codeblock')
+    
+    jq -n --arg content "$content" --arg codeblock "$codeblock"  --arg file "$file" '{
         "markdown": $content,
         "actions": [{
-            title: "Copy code block to clipboard",
+            title: "Copy to clipboard",
             text: $codeblock,
             type: "copy",
             exit: false,
+            },
+            {
+            type: "edit",
+            title: "Edit",
+            path: $file,
+            exit: false,
         }],
-    }'
+    }' 2> >(tee /dev/stderr) || { 
+       echo "Error: jq failed to process JSON" >&2
+       exit 2
+    }
+fi
+
+if [ "$COMMAND" = "edit-memo" ]; then
+    content=$(echo "$1" | jq -r '.params.content')
+    codeblock=$(echo "$1" | jq -r '.params.codeblock')
+    id=$(echo "$1" | jq -r '.params.id')
+    echo $content > /tmp/${id}.md
+    sunbeam edit /tmp/${id}.md
 fi
