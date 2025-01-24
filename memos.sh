@@ -199,6 +199,9 @@ elif [ "$COMMAND" = "view-command" ]; then
        echo "Error: jq failed to process JSON" >&2
        exit 2
     }
+    # automatically update changes to memo
+    cat /tmp/$id.md | sunbeam copy
+    #~/projects/memo-scripts/post-memo -update -clipboard
 fi
 
 if [ "$COMMAND" = "edit-memo" ]; then
