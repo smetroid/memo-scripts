@@ -14,15 +14,6 @@ import (
 	"strings"
 )
 
-type MemoContent struct {
-	Content string `json:"content"`
-}
-
-type MemoResponse struct {
-	NextPageToken string `json:"nextPageToken"`
-	Memos         []Memo `json:"memos"`
-}
-
 // extractCommand parses the command from the shell code block
 func extractCodeBlock(content string) string {
 	// Match the content inside the shell code block
@@ -71,6 +62,7 @@ func filterCommandsByTag(resultSlice []map[string]string, tag string) map[string
 
 type Memo struct {
 	Content string `json:"content"`
+	Id      string `json:"uid"`
 }
 
 type Response struct {
@@ -194,7 +186,7 @@ func main() {
 	for _, memo := range memos {
 		codeBlock := extractCodeBlock(memo.Content)
 		tags := extractTags(memo.Content)
-		itemMap := map[string]string{"cmd": codeBlock, "tags": strings.Join(tags, " "), "content": memo.Content}
+		itemMap := map[string]string{"cmd": codeBlock, "tags": strings.Join(tags, " "), "content": memo.Content, "id": memo.Id}
 		stringsMap = append(stringsMap, itemMap)
 	}
 
