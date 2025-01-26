@@ -2,17 +2,19 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"log"
 	"memo/sunbeam"
 	"net/http"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
+
+type Response struct {
+	NextPageToken string         `json:"nextPageToken"`
+	Memos         []sunbeam.Memo `json:"memos"`
+}
 
 // extractCommand parses the command from the shell code block
 func extractCodeBlock(content string) string {
@@ -60,12 +62,7 @@ func filterCommandsByTag(resultSlice []map[string]string, tag string) map[string
 	return filteredResults
 }
 
-type Response struct {
-	NextPageToken string         `json:"nextPageToken"`
-	Memos         []sunbeam.Memo `json:"memos"`
-}
-
-func getMemos(token string, apiURL string) ([]sunbeam.Memo, error) {
+func memos(token string, apiURL string) ([]sunbeam.Memo, error) {
 	var allMemos []sunbeam.Memo
 	url := apiURL
 
@@ -120,48 +117,17 @@ func getMemos(token string, apiURL string) ([]sunbeam.Memo, error) {
 	return allMemos, nil
 }
 
-func main() {
-	// Example path to the Sunbeam configuration file
-	configPath := filepath.Join(os.Getenv("HOME"), ".config", "sunbeam", "sunbeam.json")
-	// Retrieve memo preferences
-	preferences, err := sunbeam.ReadSunbeamConfig(configPath)
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
-	}
-
-	apiKey := ""
-	apiURL := ""
-	if len(preferences.MemoToken) == 0 || len(preferences.MemoURL) == 0 {
-		fmt.Printf("Error: no values found in sunbeam memo extension configuration ... trying environment variables")
-
-		apiKey = os.Getenv("USEMEMOS_API_KEY")
-		apiURL = os.Getenv("USEMEMOS_API_URL")
-	} else {
-		apiKey = preferences.MemoToken
-		apiURL = preferences.MemoURL
-	}
-
-	if apiKey == "" || apiURL == "" {
-		fmt.Println("Environment variables USEMEMOS_API_KEY and USEMEMOS_API_URL must be set. ... OR ")
-		fmt.Println("add token and url in sunbeam memos configuration")
-		os.Exit(1)
-	}
-
-	// Parse command-line arguments for additional filter tags
-	//tags := flag.String("tags", "cmd,shell,script", "Comma-separated list of tags to filter memos (e.g., 'cmd,shell,script')")
-	tags := flag.String("tags", "", "Comma-separated list of tags to filter memos (e.g., 'cmd,shell,script')")
-	flag.Parse()
-
-	// Ensure the API URL ends with `/api/memos`
-	if !strings.HasSuffix(apiURL, "/api/v1/memos") {
-		apiURL = strings.TrimRight(apiURL, "/") + "/api/v1/memos"
-	}
+func getMemos(tags *string, apiKey string, apiURL string) {
 
 	// Split the tags into a slice
 	tagList := strings.Split(*tags, ",")
 	// Format tags into query parameter
 	url := ""
+
+	// Ensure the API URL ends with `/api/memos`
+	if !strings.HasSuffix(apiURL, "/api/v1/memos") {
+		apiURL = strings.TrimRight(apiURL, "/") + "/api/v1/memos"
+	}
 
 	// if no tags, the default is an empty string, which will be 1
 	if len(tagList) == 1 && tagList[0] == "" {
@@ -172,7 +138,7 @@ func main() {
 		url = fmt.Sprintf("%s?filter=%s", apiURL, formattedTags)
 	}
 
-	memos, err := getMemos(apiKey, url)
+	memos, err := memos(apiKey, url)
 	if err != nil {
 		log.Fatalf("Error retrieving memos: %v", err)
 	}
