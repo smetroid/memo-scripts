@@ -145,7 +145,7 @@ if [ "$COMMAND" = "memo-all" ]; then
                     "params": {
                         "content": .content,
                         "codeblock": .cmd,
-                        "id": .id
+                        "name": .name
                     },
                 },
                 {
@@ -155,7 +155,7 @@ if [ "$COMMAND" = "memo-all" ]; then
                 "params": {
                     "content": .content,
                     "codeblock": .cmd,
-                    "id": .id
+                    "name": .name
                 }
             }]
         }),
@@ -163,7 +163,7 @@ if [ "$COMMAND" = "memo-all" ]; then
           "title": "Refresh items",
           "type": "reload",
           "exit": "true"
-      }]
+        }]
   }' 2> >(tee /dev/stderr) || { 
        echo "Error: jq failed to process JSON" >&2
        exit 2
@@ -175,39 +175,71 @@ if [ "$COMMAND" = "run-command" ]; then
     CMD=$(echo "$1" | jq -r '.params.codeblock')
     konsole -e bash -c "$CMD; exec bash"
 elif [ "$COMMAND" = "view-command" ]; then
-    id=$(echo "$1" | jq -r '.params.id')
     content=$(echo "$1" | jq -r '.params.content')
-    echo "$1" | jq -r '.params.content' > /tmp/$id.md
-    file="/tmp/$id.md"
     codeblock=$(echo "$1" | jq -r '.params.codeblock')
+    name=$(echo "$1" | jq -r '.params.name')
     
-    jq -n --arg content "$content" --arg codeblock "$codeblock"  --arg file "$file" '{
+    jq -n \
+    --arg content "$content" \
+    --arg codeblock "$codeblock"  \
+    --arg name "$name" '{
         "markdown": $content,
         "actions": [{
+            type: "copy",
             title: "Copy to clipboard",
             text: $codeblock,
-            type: "copy",
-            exit: false,
-            },
-            {
-            type: "edit",
+            exit: false
+        },
+        {
+            type: "run",
             title: "Edit",
-            path: $file,
-            exit: false,
+            command: "edit-memo",
+            params: {
+                "content": $content,
+                "codeblock": $codeblock,
+                "name": $name
+            }
         }],
     }' 2> >(tee /dev/stderr) || { 
-       echo "Error: jq failed to process JSON" >&2
-       exit 2
+        echo "Error: jq failed to process JSON" >&2
+        exit 2
     }
-    # automatically update changes to memo
-    cat /tmp/$id.md | sunbeam copy
-    #~/projects/memo-scripts/post-memo -update -clipboard
 fi
 
 if [ "$COMMAND" = "edit-memo" ]; then
+    # the name is in the form of "memos/id"
+    if [ ! -d "/tmp/memos" ]; then
+        mkdir /tmp/memos
+    fi
+    name=$(echo "$1" | jq -r '.params.name')
+    TMP_FILE="/tmp/$name.md"
     content=$(echo "$1" | jq -r '.params.content')
     codeblock=$(echo "$1" | jq -r '.params.codeblock')
-    id=$(echo "$1" | jq -r '.params.id')
-    echo $content > /tmp/${id}.md
-    sunbeam edit /tmp/${id}.md
+    name=$(echo "$1" | jq -r '.params.name')
+    echo "$1" | jq -r '.params.content' > $TMP_FILE
+    # Get the modification time before editing
+    before_edit=$(stat -c %Y "$TMP_FILE")
+    # Open the file in vim for editing
+    vim $TMP_FILE
+    # Get the modification time after editing
+    after_edit=$(stat -c %Y "$TMP_FILE")
+
+    if [ "$before_edit" -ne "$after_edit" ]; then
+        STATUS=$(~/projects/memo-scripts/post-memo -update -name ${name})
+        if [ $? -eq 0 ]; then
+            echo "Success: updated memo"
+            echo $STATUS
+            read -p "Press enter to exit, and go back to the app"
+            exit 0
+        else
+            echo "Error: failed to update memo"
+            echo $STATUS
+            read -p "Press enter to exit, and go back to the app"
+            exit 1
+        fi
+    else
+        echo "No changes made to the file."
+        read -p "Press enter to exit, and go back to the app"
+        exit 0
+    fi
 fi

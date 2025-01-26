@@ -7,6 +7,11 @@ import (
 	"os"
 )
 
+type Memo struct {
+	Content string `json:"content"`
+	Name    string `json:"name"`
+}
+
 // Preferences holds the memo token and URL.
 type Preferences struct {
 	MemoToken string `json:"memo_token"`

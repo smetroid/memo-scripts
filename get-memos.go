@@ -60,18 +60,13 @@ func filterCommandsByTag(resultSlice []map[string]string, tag string) map[string
 	return filteredResults
 }
 
-type Memo struct {
-	Content string `json:"content"`
-	Id      string `json:"uid"`
-}
-
 type Response struct {
-	NextPageToken string `json:"nextPageToken"`
-	Memos         []Memo `json:"memos"`
+	NextPageToken string         `json:"nextPageToken"`
+	Memos         []sunbeam.Memo `json:"memos"`
 }
 
-func getMemos(token string, apiURL string) ([]Memo, error) {
-	var allMemos []Memo
+func getMemos(token string, apiURL string) ([]sunbeam.Memo, error) {
+	var allMemos []sunbeam.Memo
 	url := apiURL
 
 	// Loop to handle pagination
@@ -186,7 +181,7 @@ func main() {
 	for _, memo := range memos {
 		codeBlock := extractCodeBlock(memo.Content)
 		tags := extractTags(memo.Content)
-		itemMap := map[string]string{"cmd": codeBlock, "tags": strings.Join(tags, " "), "content": memo.Content, "id": memo.Id}
+		itemMap := map[string]string{"cmd": codeBlock, "tags": strings.Join(tags, " "), "content": memo.Content, "name": memo.Name}
 		stringsMap = append(stringsMap, itemMap)
 	}
 
