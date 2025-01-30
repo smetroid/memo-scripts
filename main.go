@@ -37,7 +37,8 @@ func main() {
 
 	tags := flag.String("tags", "", "Comma-separated list of tags for the memo (e.g., 'shell,commands')")
 	clipboard := flag.Bool("clipboard", false, "Create a memo using the contents of the clipboard")
-	update := flag.Bool("update", false, "Update memo using the contents of the clipboard")
+	shellCommand := flag.Bool("shellCommand", false, "Create a memo using the last shell command")
+	update := flag.Bool("update", false, "Update memo")
 	name := flag.String("name", "", "id of memo to update")
 	flag.Parse()
 
@@ -48,8 +49,8 @@ func main() {
 		} else {
 			updateMemo(apiURL, name, apiKey)
 		}
-	} else if *clipboard {
-		postMemo(clipboard, tags, apiURL, apiKey)
+	} else if *clipboard || *shellCommand {
+		postMemo(clipboard, shellCommand, tags, apiURL, apiKey)
 	} else {
 		// by default get all memos or filter by tags
 		getMemos(tags, apiKey, apiURL)

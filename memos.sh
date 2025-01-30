@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #Surpresses errors from the shell, disable when debugging
 #set -eu
@@ -64,7 +64,7 @@ COMMAND=$(echo "$1" | jq -r '.command')
 FILTER=$(echo "$1" | jq -r '.command | split("-")[1]')
 if [ "$COMMAND" = "memo-cmds" ]; then
     echo $(date) >>$OUTPUT
-    MEMOS=$(~/projects/memo-scripts/get-memos -tags "${FILTER}")
+    MEMOS=$(~/projects/memo-scripts/memo-scripts -tags "${FILTER}")
     echo "Debug: MEMOS output:" >>$OUTPUT
     echo "$FILTER" >>$OUTPUT
     echo "$MEMOS" >>$OUTPUT
@@ -102,7 +102,7 @@ if [ "$COMMAND" = "memo-cmds" ]; then
 fi
 
 if [ "$COMMAND" = "memo-snippets" ]; then
-    MEMOS=$(~/projects/memo-scripts/get-memos -tags "${FILTER}")
+    MEMOS=$(~/projects/memo-scripts/memo-scripts -tags "${FILTER}")
     # it seems to fail because get-memos is not fast enough
     #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
     echo "$MEMOS" | jq '{
@@ -130,7 +130,7 @@ if [ "$COMMAND" = "memo-snippets" ]; then
 fi
 
 if [ "$COMMAND" = "memo-all" ]; then
-    MEMOS=$(~/projects/memo-scripts/get-memos)
+    MEMOS=$(~/projects/memo-scripts/memo-scripts)
     # it seems to fail because get-memos is not fast enough
     #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
     echo "$MEMOS" | jq '{
@@ -164,11 +164,11 @@ if [ "$COMMAND" = "memo-all" ]; then
           "type": "reload",
           "exit": "true"
         }]
-  }' 2> >(tee /dev/stderr) || { 
-       echo "Error: jq failed to process JSON" >&2
-       exit 2
+  }' 2> >(tee /dev/stderr) || {
+        echo "Error: jq failed to process JSON" >&2
+        exit 2
     }
-  exit 0
+    exit 0
 fi
 
 if [ "$COMMAND" = "run-command" ]; then
@@ -178,11 +178,11 @@ elif [ "$COMMAND" = "view-command" ]; then
     content=$(echo "$1" | jq -r '.params.content')
     codeblock=$(echo "$1" | jq -r '.params.codeblock')
     name=$(echo "$1" | jq -r '.params.name')
-    
+
     jq -n \
-    --arg content "$content" \
-    --arg codeblock "$codeblock"  \
-    --arg name "$name" '{
+        --arg content "$content" \
+        --arg codeblock "$codeblock" \
+        --arg name "$name" '{
         "markdown": $content,
         "actions": [{
             type: "copy",
@@ -200,7 +200,7 @@ elif [ "$COMMAND" = "view-command" ]; then
                 "name": $name
             }
         }],
-    }' 2> >(tee /dev/stderr) || { 
+    }' 2> >(tee /dev/stderr) || {
         echo "Error: jq failed to process JSON" >&2
         exit 2
     }
@@ -216,7 +216,7 @@ if [ "$COMMAND" = "edit-memo" ]; then
     content=$(echo "$1" | jq -r '.params.content')
     codeblock=$(echo "$1" | jq -r '.params.codeblock')
     name=$(echo "$1" | jq -r '.params.name')
-    echo "$1" | jq -r '.params.content' > $TMP_FILE
+    echo "$1" | jq -r '.params.content' >$TMP_FILE
     # Get the modification time before editing
     before_edit=$(stat -c %Y "$TMP_FILE")
     # Open the file in vim for editing
@@ -225,7 +225,7 @@ if [ "$COMMAND" = "edit-memo" ]; then
     after_edit=$(stat -c %Y "$TMP_FILE")
 
     if [ "$before_edit" -ne "$after_edit" ]; then
-        STATUS=$(~/projects/memo-scripts/post-memo -update -name ${name})
+        STATUS=$(~/projects/memo-scripts/memo-scripts -update -name ${name})
         if [ $? -eq 0 ]; then
             echo "Success: updated memo"
             echo $STATUS

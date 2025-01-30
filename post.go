@@ -103,7 +103,7 @@ func updateMemo(apiURL string, name *string, apiKey string) {
 	fmt.Printf("Updated memo id : %s\n", *name)
 
 }
-func postMemo(clipboard *bool, tags *string, apiURL string, apiKey string) {
+func postMemo(clipboard *bool, shellCommand *bool, tags *string, apiURL string, apiKey string) {
 	var content string
 	if *clipboard {
 		cmd := exec.Command("sunbeam", "paste")
@@ -113,13 +113,16 @@ func postMemo(clipboard *bool, tags *string, apiURL string, apiKey string) {
 			os.Exit(1)
 		}
 		content = string(out)
-	} else {
+	} else if *shellCommand {
 		lastCommand, err := getLastShellCommand()
 		if err != nil {
 			fmt.Printf("Error retrieving last shell command: %v\n", err)
 			os.Exit(1)
 		}
 		content = lastCommand
+	} else {
+		fmt.Print("Unable to post memo ... please specify --clipboard or --shellCommand")
+
 	}
 	// Ensure the API URL ends with `/api/memo`
 	if !strings.HasSuffix(apiURL, "/api/v1/memos") {
