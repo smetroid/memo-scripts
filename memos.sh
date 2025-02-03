@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #Surpresses errors from the shell, disable when debugging
 #set -eu
@@ -48,6 +48,12 @@ if [ $# -eq 0 ]; then
                 title: "view command",
                 mode: "detail",
                 exit: "false"
+            },
+            {
+                name: "edit-memo",
+                title: "edit memo",
+                mode: "tty",
+                exit: "false"
             }
         ]
     }'
@@ -55,16 +61,16 @@ if [ $# -eq 0 ]; then
 fi
 
 COMMAND=$(echo "$1" | jq -r '.command')
-FILTER=$(echo "$1" | jq -r '.command | split("-")[1]' )
+FILTER=$(echo "$1" | jq -r '.command | split("-")[1]')
 if [ "$COMMAND" = "memo-cmds" ]; then
-  echo $(date) >> $OUTPUT
-  MEMOS=$(~/projects/memo-scripts/get-memos -tags "${FILTER}")
-  echo "Debug: MEMOS output:" >> $OUTPUT
-  echo "$FILTER" >> $OUTPUT
-  echo "$MEMOS" >> $OUTPUT
-  # it seems to fail because get-memos is not fast enough
-  #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
-  echo "$MEMOS" | jq '{
+    "$(date)" >> "$OUTPUT"
+    MEMOS=$(~/projects/memo-scripts/memo-scripts -tags "${FILTER}")
+    echo "Debug: MEMOS output:" >> "$OUTPUT"
+    echo "$FILTER" >> "$OUTPUT"
+    echo "$MEMOS" >> "$OUTPUT"
+    # it seems to fail because get-memos is not fast enough
+    #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
+    echo "$MEMOS" | jq '{
         "items": map({
             "title": .cmd,
             #"subtitle": .tags,
@@ -92,14 +98,14 @@ if [ "$COMMAND" = "memo-cmds" ]; then
           "exit": "true"
       }]
   }'
-  exit 0
+    exit 0
 fi
 
 if [ "$COMMAND" = "memo-snippets" ]; then
-  MEMOS=$(~/projects/memo-scripts/get-memos -tags "${FILTER}")
-  # it seems to fail because get-memos is not fast enough
-  #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
-  echo "$MEMOS" | jq '{
+    MEMOS=$(~/projects/memo-scripts/memo-scripts -tags "${FILTER}")
+    # it seems to fail because get-memos is not fast enough
+    #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
+    echo "$MEMOS" | jq '{
         "items": map({
             "title": .content,
             #"subtitle": .tags,
@@ -120,52 +126,132 @@ if [ "$COMMAND" = "memo-snippets" ]; then
           "exit": "true"
       }]
   }'
-  exit 0
+    exit 0
 fi
 
-
 if [ "$COMMAND" = "memo-all" ]; then
-  MEMOS=$(~/projects/memo-scripts/get-memos)
-  # it seems to fail because get-memos is not fast enough
-  #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
-  echo "$MEMOS" | jq '{
+    MEMOS=$(~/projects/memo-scripts/memo-scripts)
+    # it seems to fail because get-memos is not fast enough
+    #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
+    echo "$MEMOS" | jq '{
         "items": map({
             "title": .content,
             "subtitle": .cmd,
             "accessories": [.tags],
             "actions": [{
                 "type": "run",
-                "title": "view cmd ",
+                "title": "view memo",
                 "command": "view-command",
+                    "params": {
+                        "content": .content,
+                        "codeblock": .cmd,
+                        "name": .name
+                    },
+                },
+                {
+                "type": "run",
+                "title": "edit memo",
+                "command": "edit-memo",
                 "params": {
                     "content": .content,
                     "codeblock": .cmd,
-                },
+                    "name": .name
+                }
             }]
         }),
         "actions": [{
           "title": "Refresh items",
           "type": "reload",
           "exit": "true"
-      }]
-  }'
-  exit 0
+        }]
+  }' 2> >(tee /dev/stderr) || {
+       echo "Error: jq failed to process JSON" >&2
+       exit 2
+    }
+    exit 0
 fi
 
-
 if [ "$COMMAND" = "run-command" ]; then
-  CMD=$(echo "$1"| jq -r '.params.codeblock')
-  konsole -e bash -c "$CMD; exec bash"
+    CMD=$(echo "$1" | jq -r '.params.codeblock')
+    konsole -e bash -c "$CMD; exec bash"
 elif [ "$COMMAND" = "view-command" ]; then
-    content=$(echo "$1"| jq -r '.params.content')
-    codeblock=$(echo "$1"| jq -r '.params.codeblock')
-    jq -n --arg content "$content" --arg codeblock "$codeblock" '{
+    content=$(echo "$1" | jq -r '.params.content')
+    codeblock=$(echo "$1" | jq -r '.params.codeblock')
+    name=$(echo "$1" | jq -r '.params.name')
+
+    jq -n \
+        --arg content "$content" \
+        --arg codeblock "$codeblock" \
+        --arg name "$name" '{
         "markdown": $content,
         "actions": [{
-            title: "Copy code block to clipboard",
-            text: $codeblock,
             type: "copy",
-            exit: false,
+            title: "Copy to clipboard",
+            text: $codeblock,
+            exit: false
+        },
+        {
+            type: "run",
+            title: "Edit",
+            command: "edit-memo",
+            params: {
+                "content": $content,
+                "codeblock": $codeblock,
+                "name": $name
+            }
         }],
-    }'
+    }' 2> >(tee /dev/stderr) || {
+        echo "Error: jq failed to process JSON" >&2
+        exit 2
+    }
+fi
+
+if [ "$COMMAND" = "edit-memo" ]; then
+    # the name is in the form of "memos/id"
+    if [ ! -d "/tmp/memos" ]; then
+        mkdir /tmp/memos
+    fi
+    name=$(echo "$1" | jq -r '.params.name')
+    TMP_FILE="/tmp/$name.md"
+    content=$(echo "$1" | jq -r '.params.content')
+    codeblock=$(echo "$1" | jq -r '.params.codeblock')
+    name=$(echo "$1" | jq -r '.params.name')
+    echo "$1" | jq -r '.params.content' > "$TMP_FILE"
+
+    # Get the modification time before editing
+    if [[ "$OSTYPE" =~ "darwin" ]]; then
+        before_edit=$(stat -f %m "$TMP_FILE")
+    else
+        before_edit=$(stat -c %Y "$TMP_FILE")
+    fi
+
+    # Open the file in vim for editing
+    vim "$TMP_FILE"
+
+    # Get the modification time after editing
+    after_edit=$(stat -c %Y "$TMP_FILE")
+    if [[ "$OSTYPE" =~ "darwin" ]]; then
+        after_edit=$(stat -f %m "$TMP_FILE")
+    else
+        after_edit=$(stat -c %Y "$TMP_FILE")
+    fi
+
+    if [ "$before_edit" -ne "$after_edit" ]; then
+        STATUS=$(~/projects/memo-scripts/memo-scripts -update -name "${name}")
+        if [ $? -eq 0 ]; then
+            echo "Success: updated memo"
+            echo "$STATUS"
+            read -r -p "Press enter to exit, and go back to the app"
+            exit 0
+        else
+            echo "Error: failed to update memo"
+            echo "$STATUS"
+            read -r -p "Press enter to exit, and go back to the app"
+            exit 1
+        fi
+    else
+        echo "No changes made to the file."
+        read -r -p "Press enter to exit, and go back to the app"
+        exit 0
+    fi
 fi
