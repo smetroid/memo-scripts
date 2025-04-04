@@ -61,13 +61,15 @@ if [ $# -eq 0 ]; then
 fi
 
 COMMAND=$(echo "$1" | jq -r '.command')
+#echo $COMMAND >>$OUTPUT
 FILTER=$(echo "$1" | jq -r '.command | split("-")[1]')
+#echo $FILTER >>$OUTPUT
 if [ "$COMMAND" = "memo-cmds" ]; then
     echo $(date) >>$OUTPUT
     MEMOS=$(~/projects/memo-scripts/memo-scripts -tags "${FILTER}")
-    echo "Debug: MEMOS output:" >>$OUTPUT
-    echo "$FILTER" >>$OUTPUT
-    echo "$MEMOS" >>$OUTPUT
+    #echo "Debug: MEMOS output:" >>$OUTPUT
+    #echo "$FILTER" >>$OUTPUT
+    #echo "$MEMOS" >>$OUTPUT
     # it seems to fail because get-memos is not fast enough
     #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
     echo "$MEMOS" | jq '{
@@ -104,7 +106,6 @@ fi
 if [ "$COMMAND" = "memo-snippets" ]; then
     MEMOS=$(~/projects/memo-scripts/memo-scripts -tags "${FILTER}")
     # it seems to fail because get-memos is not fast enough
-    #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
     echo "$MEMOS" | jq '{
         "items": map({
             "title": .content,
@@ -131,8 +132,9 @@ fi
 
 if [ "$COMMAND" = "memo-all" ]; then
     MEMOS=$(~/projects/memo-scripts/memo-scripts)
-    # it seems to fail because get-memos is not fast enough
-    #~/projects/memo-scripts/get-memos | tee ./debug_output.json | jq '{
+    #echo "Debug: all memos output:" >>$OUTPUT
+    #echo "$FILTER" >>$OUTPUT
+    #echo "$MEMOS" >>$OUTPUT
     echo "$MEMOS" | jq '{
         "items": map({
             "title": .content,
