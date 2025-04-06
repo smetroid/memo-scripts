@@ -228,5 +228,6 @@ func postMemo(clipboard *bool, shellCommand *bool, tags *string, apiURL string, 
 	} else {
 		fmt.Printf("Failed to post memo. Status: %s\n", resp.Status)
 		fmt.Printf("Response: %s\n", string(body))
+		os.Exit(1)
 	}
 }
