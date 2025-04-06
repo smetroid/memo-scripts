@@ -122,6 +122,7 @@ func postMemo(clipboard *bool, shellCommand *bool, tags *string, apiURL string, 
 		content = lastCommand
 	} else {
 		fmt.Print("Unable to post memo ... please specify --clipboard or --shellCommand")
+		os.Exit(1)
 
 	}
 	// Ensure the API URL ends with `/api/memo`
