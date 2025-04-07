@@ -99,7 +99,10 @@ if [ "$COMMAND" = "memo-cmds" ]; then
           "type": "reload",
           "exit": "true"
       }]
-  }'
+    }' 2> >(tee /dev/stderr) || {
+        echo "Error: jq failed to process JSON" >&2
+        exit 2
+    }
     exit 0
 fi
 
@@ -126,7 +129,10 @@ if [ "$COMMAND" = "memo-snippets" ]; then
           "type": "reload",
           "exit": "true"
       }]
-  }'
+    }' 2> >(tee /dev/stderr) || {
+        echo "Error: jq failed to process JSON" >&2
+        exit 2
+    }
     exit 0
 fi
 

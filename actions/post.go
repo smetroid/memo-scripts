@@ -1,4 +1,4 @@
-package main
+package actions
 
 import (
 	"bufio"
@@ -39,7 +39,7 @@ func getLastShellCommand() (string, error) {
 }
 
 // UpdateMemo updates an existing memo entry via the Memo API.
-func UpdateMemo(apiURL string, memoName string, updatedData sunbeam.Memo, apiKey string) (sunbeam.Memo, error) {
+func updateMemo(apiURL string, memoName string, updatedData sunbeam.Memo, apiKey string) (sunbeam.Memo, error) {
 	// Construct the URL with the memo ID
 	url := fmt.Sprintf("%s/api/v1/%s", apiURL, memoName)
 
@@ -82,7 +82,7 @@ func UpdateMemo(apiURL string, memoName string, updatedData sunbeam.Memo, apiKey
 	return updatedMemo, nil
 }
 
-func updateMemo(apiURL string, name *string, apiKey string) {
+func UpdateMemo(apiURL string, name *string, apiKey string) {
 	file := fmt.Sprintf("/tmp/%s.md", *name)
 	content, err := os.ReadFile(file)
 	if err != nil {
@@ -95,7 +95,7 @@ func updateMemo(apiURL string, name *string, apiKey string) {
 		Content: string(content),
 		Name:    string(*name),
 	}
-	_, err = UpdateMemo(apiURL, *name, updateData, apiKey)
+	_, err = updateMemo(apiURL, *name, updateData, apiKey)
 	if err != nil {
 		fmt.Printf("Error updating memo: %v\n", err)
 		os.Exit(1)
@@ -103,7 +103,7 @@ func updateMemo(apiURL string, name *string, apiKey string) {
 	fmt.Printf("Updated memo id : %s\n", *name)
 
 }
-func postMemo(clipboard *bool, shellCommand *bool, tags *string, apiURL string, apiKey string) {
+func PostMemo(clipboard *bool, shellCommand *bool, tags *string, apiURL string, apiKey string) {
 	var content string
 	if *clipboard {
 		cmd := exec.Command("sunbeam", "paste")
