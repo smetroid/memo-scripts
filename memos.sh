@@ -226,28 +226,27 @@ if [ "$COMMAND" = "edit-memo" ]; then
     name=$(echo "$1" | jq -r '.params.name')
     echo "$1" | jq -r '.params.content' >$TMP_FILE
     # Get the modification time before editing
-    before_edit=$(stat -c %Y "$TMP_FILE")
+    before_edit=$(stat -c %Y "$TMP_FILE" 2>/dev/null || stat -f %m "$TMP_FILE")
     # Open the file in vim for editing
     vim $TMP_FILE
     # Get the modification time after editing
-    after_edit=$(stat -c %Y "$TMP_FILE")
-
+    after_edit=$(stat -c %Y "$TMP_FILE" 2>/dev/null || stat -f %m "$TMP_FILE")
     if [ "$before_edit" -ne "$after_edit" ]; then
         STATUS=$(~/projects/memo-scripts/memo-scripts -update -name ${name})
         if [ $? -eq 0 ]; then
             echo "Success: updated memo"
             echo $STATUS
-            read -p "Press enter to exit, and go back to the app"
+            read -r -p "Press enter to exit, and go back to the app"
             exit 0
         else
             echo "Error: failed to update memo"
             echo $STATUS
-            read -p "Press enter to exit, and go back to the app"
+            read -r -p "Press enter to exit, and go back to the app"
             exit 1
         fi
     else
         echo "No changes made to the file."
-        read -p "Press enter to exit, and go back to the app"
+        read -r -p "Press enter to exit, and go back to the app"
         exit 0
     fi
 fi
