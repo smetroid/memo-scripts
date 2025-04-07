@@ -1,4 +1,4 @@
-package main
+package actions
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"log"
 	"memo/sunbeam"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -117,12 +118,12 @@ func memos(token string, apiURL string) ([]sunbeam.Memo, error) {
 	return allMemos, nil
 }
 
-func getMemos(tags *string, apiKey string, apiURL string) {
+func GetMemos(tags *string, apiKey string, apiURL string) {
 
 	// Split the tags into a slice
 	tagList := strings.Split(*tags, ",")
 	// Format tags into query parameter
-	url := ""
+	rawUrl := ""
 
 	// Ensure the API URL ends with `/api/memos`
 	if !strings.HasSuffix(apiURL, "/api/v1/memos") {
@@ -131,14 +132,16 @@ func getMemos(tags *string, apiKey string, apiURL string) {
 
 	// if no tags, the default is an empty string, which will be 1
 	if len(tagList) == 1 && tagList[0] == "" {
-		url = fmt.Sprintf("%s?", apiURL)
+		rawUrl = fmt.Sprintf("%s?", apiURL)
 	} else {
-		formattedTags := fmt.Sprintf("tag_search==['%s']", strings.Join(tagList, "','"))
+		formattedTags := fmt.Sprintf("tag in ['%s']", strings.Join(tagList, "','"))
+		urlEncodedTags := url.QueryEscape(formattedTags)
 		// Construct the full URL with the tag filter
-		url = fmt.Sprintf("%s?filter=%s", apiURL, formattedTags)
+		rawUrl = fmt.Sprintf("%s?filter=%s", apiURL, urlEncodedTags)
 	}
 
-	memos, err := memos(apiKey, url)
+	//fmt.Println("URL: ", rawUrl)
+	memos, err := memos(apiKey, rawUrl)
 	if err != nil {
 		log.Fatalf("Error retrieving memos: %v", err)
 	}

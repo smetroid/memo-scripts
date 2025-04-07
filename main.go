@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"memo/actions"
 	"memo/sunbeam"
 	"os"
 	"path/filepath"
@@ -47,12 +48,12 @@ func main() {
 			fmt.Println("Please provide a memo id to update")
 			os.Exit(1)
 		} else {
-			updateMemo(apiURL, name, apiKey)
+			actions.UpdateMemo(apiURL, name, apiKey)
 		}
 	} else if *clipboard || *shellCommand {
-		postMemo(clipboard, shellCommand, tags, apiURL, apiKey)
+		actions.PostMemo(clipboard, shellCommand, tags, apiURL, apiKey)
 	} else {
 		// by default get all memos or filter by tags
-		getMemos(tags, apiKey, apiURL)
+		actions.GetMemos(tags, apiKey, apiURL)
 	}
 }

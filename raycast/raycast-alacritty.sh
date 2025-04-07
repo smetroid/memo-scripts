@@ -6,7 +6,7 @@
 # @raycast.mode silent
 
 # Optional parameters:
-# @raycast.icon ~/projects/memo-scripts/sunbeam.png
+# @raycast.icon ~/projects/memo-scripts/sunbeam/sunbeam.png
 
 # Documentation:
 # @raycast.author EnriqueC
