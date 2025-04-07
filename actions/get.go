@@ -140,8 +140,7 @@ func GetMemos(tags *string, apiKey string, apiURL string) {
 		rawUrl = fmt.Sprintf("%s?filter=%s", apiURL, urlEncodedTags)
 	}
 
-	//urlEncoded, _ := url.QueryEscape(rawUrl)
-	fmt.Println("URL: ", rawUrl)
+	//fmt.Println("URL: ", rawUrl)
 	memos, err := memos(apiKey, rawUrl)
 	if err != nil {
 		log.Fatalf("Error retrieving memos: %v", err)
