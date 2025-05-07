@@ -27,7 +27,7 @@ jobs:
       - name: Build binary
         run: |
           mkdir -p dist
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }} main.go
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/sunbeam-memos-${{ matrix.goos }}-${{ matrix.goarch }} main.go
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
